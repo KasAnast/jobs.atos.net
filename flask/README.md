@@ -1,10 +1,4 @@
-Scraper for jobs.atos.net
-
 Framework: Flask
-
-IDE for running: PyCharm 2022.2.3
-
-Python Interpreter: Python 3.11
 
 Steps for running:
 1. Run main.py 

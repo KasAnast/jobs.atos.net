@@ -151,13 +151,128 @@
 from telegram import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, \
     CallbackQueryHandler, MessageHandler, Filters
+import re
+import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+import time
+from selenium.webdriver import ActionChains
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from bs4 import BeautifulSoup
+import html2text
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.options import Options
+import json
+import operator
 
-def start(update, context):
-    update.message.reply_text('Start')
+titles = ['python', 'go', 'golang', '1C','java','git','gitlab','linux','windows','sap', 'C#']
+loctab = ['UK','RU','US']
+text = ''
+region = ''
+def call(text, region):
+    sk = ['NodeJS', 'Angular', 'TypeScript', 'Robot Framework',
+          'Linux', 'Unix', 'Cloud', 'Cybersecurity', 'Devops',
+          'Java', 'C', 'C++', 'C#', 'React', 'Oracle', 'Shell', 'Perl',
+          'Go', 'Golang', 'Python', 'Rust', 'Javascript',
+          'SQL', 'Git', 'Angular', 'Vue', 'Docker', 'Kubernetes']
+    dict_of_key_skills = {}
+    dict_of_key_skills['strSearch'] = text
+    dict_of_key_skills['strArea'] = region
+    dict_of_key_skills['strUrl'] = []
+    dict_of_key_skills['strJobTitle'] = []
+    dict_of_key_skills['strArrKeySkills'] = []
+    next_page = 0
+    repeat = True
+    options = Options()
+    options.add_argument("--headless")
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    while repeat:
+        url = 'https://jobs.atos.net/search/?q=' + text + '&locationsearch=' + region + '&startrow=' + str(next_page)
+        driver.get(url)
+        content = driver.page_source
+        soup = BeautifulSoup(content, "html.parser")
+        count_jobs_str = soup.find('span', {'class': 'paginationLabel'})
+        count_jobs_split = re.findall(r'\d+', count_jobs_str.text)
+        for a in soup.findAll('a', {'class': 'jobTitle-link'}):
+            link = a['href']
+            link = 'https://jobs.atos.net' + link
+            if link not in dict_of_key_skills['strUrl']:
+                dict_of_key_skills['strUrl'].append(link)
+                link_text = requests.get(link).text
+                soup_l = BeautifulSoup(link_text, 'html.parser')
+                title = soup_l.find(attrs={
+                    'itemprop': 'title'})
+                if title:
+                    dict_of_key_skills['strJobTitle'].append(title.text)
+                span = soup_l.find('span', attrs={
+                    'class': 'jobdescription'})
+                d = html2text.HTML2Text()
+                d.ignore_links = True
+                skills = d.handle(span.text)
+                array = re.split(r'/|,| |\n|;|(?!.* ).', skills, flags=re.DOTALL)
+                list = array
+                for skill in list:
+                    for s in sk:
+                        if skill.upper() == s.upper():
+                            if s.upper() not in dict_of_key_skills['strArrKeySkills']:
+                                dict_of_key_skills['strArrKeySkills'].append(s)
+        repeat = count_jobs_split[1] < count_jobs_split[2]
+        if repeat:
+           next_page = count_jobs_split[1]
+    driver.quit()
+    dict_of_key_skills['amountvac'] = count_jobs_split[2]
+    return dict_of_key_skills
+
+def analisys(dict,dict_of_key_skills):
+    for key_skill in dict_of_key_skills['strArrKeySkills']:
+        if dict.setdefault(key_skill) == None:
+            dict[key_skill] = 1
+        else:
+            dict[key_skill] += 1
+
+def get_chat_id(update, context):
+    chat_id = -1
+
+    if update.message is not None:
+        chat_id = update.message.chat.id
+    elif update.callback_query is not None:
+        chat_id = update.callback_query.message.chat.id
+    elif update.poll is not None:
+        chat_id = context.bot_data[update.poll.id]
+
+    return chat_id
+
+def search(update, context):
+    dict_of_key_skills = call(text, region)
+    dict_json = {}
+    dict_json['strSearch'] = dict_of_key_skills['strSearch']
+    dict_json['strArea'] = dict_of_key_skills['strArea']
+    dict_json['strUrl'] = dict_of_key_skills['strUrl']
+    dict_json['strJobTitle'] = dict_of_key_skills['strJobTitle']
+    dicti = {}
+    analisys(dicti, dict_of_key_skills)
+    sorted_d = dict(sorted(dicti.items(), key=operator.itemgetter(1), reverse=True))
+    dict_json['skills'] = sorted_d
+    with open("skills.json", "w") as outfile:
+        json.dump(dict_json, outfile)
+    items_num = f"{(len(sorted_d))} skills are found"
+    str = ''
+    for key, value in sorted_d.items():
+        str = f"{str}\n{key} - {value}"
+    update.message.reply_text(f"{items_num}\n"
+                              f"{str}")
+    with open("skills.json", "rb") as outfile:
+        context.bot.send_document( chat_id=get_chat_id(update, context),
+                                   document=outfile,
+                                   filename='skills.json')
+
 def set(update, context):
-    keyboardInline = [[InlineKeyboardButton("Option 1", callback_data='1'),
-                 InlineKeyboardButton("Option 2", callback_data='2')],
-                [InlineKeyboardButton("Option 3", callback_data='3')]]
+    keyboardInline = [[InlineKeyboardButton("Title", callback_data='title')],
+                      [InlineKeyboardButton("Location", callback_data='loc')]]
 
     reply_markupInline = InlineKeyboardMarkup(keyboardInline)
 
@@ -170,31 +285,43 @@ def set(update, context):
     # reply_markup.selective = True
     update.message.reply_text('Please choose:', reply_markup=reply_markupInline)
 
-
 def button(update, _):
+    global text, region, titles, loctab
     query = update.callback_query
-    if query.data == '1':
-        update.callback_query.delete_message
-        keyboard = [[InlineKeyboardButton("A", callback_data='A'),
-                     InlineKeyboardButton("B", callback_data='B')],
-                    [InlineKeyboardButton("C", callback_data='C')]]
+    update.callback_query.delete_message
+    match query.data:
+        case 'title':
+            keyboard = []
+            for key_skill in titles:
+                keyboard.append([InlineKeyboardButton(key_skill, callback_data=f"T{key_skill}")])
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            update.callback_query.edit_message_text('Please choose title:', reply_markup=reply_markup)
+        case 'loc':
+            keyboard = []
+            for key_skill in loctab:
+                keyboard.append([InlineKeyboardButton(key_skill, callback_data=f"L{key_skill}")])
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            update.callback_query.edit_message_text('Please choose location:', reply_markup=reply_markup)
+        case _:
+            match query.data[0]:
+                case 'T':
+                    text = query.data[1:]
+                    update.callback_query.edit_message_text("Title: %s" % query.data[1:])
+                case 'L':
+                    region = query.data[1:]
+                    update.callback_query.edit_message_text("Location: %s" % query.data[1:])
 
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        update.callback_query.edit_message_text('Please choose:', reply_markup=reply_markup)
-        update.callback_query.delete_message
-    else:
-        update.callback_query.edit_message_text("Selected option: %s" % query.data)
-        update.callback_query.delete_message
-
+def show(update, _):
+    update.message.reply_text(f"Title: {text}\nLocation: {region}")
 def help(update, _):
     update.message.reply_text(
-'''I can help you to find frequency of occurrence in the text 
-of vacancies of searched skill at the site jobs.atos.net
-    
-You can control me by sending these commands:
+"I can help you to find frequency of occurrence in the text "
+"of vacancies of searched skill at the site jobs.atos.net \n"
+"You can control me by sending these commands:\n"
 
-/search - for start searching
-/set - for set up searching details or "''')
+"/search - for start searching\n"
+"/show - for check current details for search\n"
+"/set - for set up details for search")
 
 def cancel(update, _):
     update.message.reply_text('Operation cancelled. /help')
@@ -206,11 +333,12 @@ def main():
     # Create the Updater and past it your bot's token.
     updater = Updater("5473579136:AAGa7eshR8bvApduIDgT8mcFL6w5M3HNbOE", use_context=True)
 
-    updater.dispatcher.add_handler(CommandHandler('start', start))
+    updater.dispatcher.add_handler(CommandHandler('search', search))
     updater.dispatcher.add_handler(CommandHandler('set', set))
     updater.dispatcher.add_handler(CallbackQueryHandler(button))
     updater.dispatcher.add_handler(CommandHandler('help', help))
     updater.dispatcher.add_handler(CommandHandler('cancel', cancel))
+    updater.dispatcher.add_handler(CommandHandler('show', show))
 
     updater.dispatcher.add_handler(MessageHandler(Filters.text, help))
     updater.dispatcher.add_handler(MessageHandler(Filters.command, unknown))
