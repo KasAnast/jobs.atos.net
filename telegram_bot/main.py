@@ -215,7 +215,7 @@ def call(text, region):
                     d.ignore_links = True
                     skills = d.handle(span.text)
                     array = re.split(r'/|,| |\n|;|(?!.* ).', skills, flags=re.DOTALL)
-                    list = array
+                    list = frozenset(array)
                     for skill in list:
                         for s in sk:
                             if skill.upper() == s.upper():
