@@ -5,7 +5,7 @@ Work via start_polling()
 Steps for running:
 
 1. Run main.py via PyCharm with interpreter Python 3.11
-2. Open bot https://t.me/useful_tricks_bot 
+2. Open bot [@useful_tricks_bot](https://t.me/useful_tricks_bot) 
 <p align="center">
 <img src="https://user-images.githubusercontent.com/49523237/201311480-9d4b6cfb-7150-434e-8e11-4dfdf289b709.png" width=50% height=50%>
 </p>
