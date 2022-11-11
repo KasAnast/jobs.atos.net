@@ -1,4 +1,4 @@
-Framework: Flask
+Framework: Flask 2.2.0
 
 Steps for running:
 1. Run main.py 
