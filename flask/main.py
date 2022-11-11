@@ -18,6 +18,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
 import json
 
+
 def call(text, region):
     sk = ['NodeJS', 'Angular', 'TypeScript', 'Robot Framework',
           'Linux', 'Unix', 'Cloud', 'Cybersecurity', 'Devops',
@@ -40,40 +41,43 @@ def call(text, region):
         driver.get(url)
         content = driver.page_source
         soup = BeautifulSoup(content, "html.parser")
-        count_jobs_str = soup.find('span', {'class': 'paginationLabel'})
-        count_jobs_split = re.findall(r'\d+', count_jobs_str.text)
-        for a in soup.findAll('a', {'class': 'jobTitle-link'}):
-            link = a['href']
-            link = 'https://jobs.atos.net' + link
-            if link not in dict_of_key_skills['strUrl']:
-                dict_of_key_skills['strUrl'].append(link)
-                link_text = requests.get(link).text
-                soup_l = BeautifulSoup(link_text, 'html.parser')
-                title = soup_l.find(attrs={
-                    'itemprop': 'title'})
-                if title:
-                    dict_of_key_skills['strJobTitle'].append(title.text)
-                span = soup_l.find('span', attrs={
-                    'class': 'jobdescription'})
-                d = html2text.HTML2Text()
-                d.ignore_links = True
-                skills = d.handle(span.text)
-                array = re.split(r'/|,| |\n|;|(?!.* ).', skills, flags=re.DOTALL)
-                list = set(array)
-                for skill in list:
-                    for s in sk:
-                        if skill.upper() == s.upper():
-                            if s.upper() not in dict_of_key_skills['strArrKeySkills']:
-                                dict_of_key_skills['strArrKeySkills'].append(s)
-        repeat = count_jobs_split[1] < count_jobs_split[2]
-        if repeat:
-           next_page = count_jobs_split[1]
+        try:
+            count_jobs_str = soup.find('span', {'class': 'paginationLabel'})
+            count_jobs_split = re.findall(r'\d+', count_jobs_str.text)
+            for a in soup.findAll('a', {'class': 'jobTitle-link'}):
+                link = a['href']
+                link = 'https://jobs.atos.net' + link
+                if link not in dict_of_key_skills['strUrl']:
+                    dict_of_key_skills['strUrl'].append(link)
+                    link_text = requests.get(link).text
+                    soup_l = BeautifulSoup(link_text, 'html.parser')
+                    title = soup_l.find(attrs={
+                        'itemprop': 'title'})
+                    if title:
+                        dict_of_key_skills['strJobTitle'].append(title.text)
+                    span = soup_l.find('span', attrs={
+                        'class': 'jobdescription'})
+                    d = html2text.HTML2Text()
+                    d.ignore_links = True
+                    skills = d.handle(span.text)
+                    array = re.split(r'/|,| |\n|;|(?!.* ).', skills, flags=re.DOTALL)
+                    list = set(array)
+                    for skill in list:
+                        for s in sk:
+                            if skill.upper() == s.upper():
+                                if s.upper() not in dict_of_key_skills['strArrKeySkills']:
+                                    dict_of_key_skills['strArrKeySkills'].append(s)
+            repeat = count_jobs_split[1] < count_jobs_split[2]
+            dict_of_key_skills['amountvac'] = count_jobs_split[2]
+            if repeat:
+                next_page = count_jobs_split[1]
+        except:
+            repeat = False
     driver.quit()
-    dict_of_key_skills['amountvac'] = count_jobs_split[2]
     return dict_of_key_skills
 
 
-def analisys(dict,dict_of_key_skills):
+def analisys(dict, dict_of_key_skills):
     for key_skill in dict_of_key_skills['strArrKeySkills']:
         if dict.setdefault(key_skill) == None:
             dict[key_skill] = 1
@@ -83,6 +87,7 @@ def analisys(dict,dict_of_key_skills):
 
 app = Flask(__name__)
 port = int(os.environ.get('PORT', 3000))
+
 
 @app.route('/', methods=('GET', 'POST'))
 def load():
@@ -103,7 +108,7 @@ def load():
         dict_json['strUrl'] = dict_of_key_skills['strUrl']
         dict_json['strJobTitle'] = dict_of_key_skills['strJobTitle']
         dicti = {}
-        analisys(dicti,dict_of_key_skills)
+        analisys(dicti, dict_of_key_skills)
         sorted_d = dict(sorted(dicti.items(), key=operator.itemgetter(1), reverse=True))
         dict_json['skills'] = sorted_d
         with open("skills.json", "w") as outfile:
