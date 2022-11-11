@@ -195,36 +195,39 @@ def call(text, region):
         driver.get(url)
         content = driver.page_source
         soup = BeautifulSoup(content, "html.parser")
-        count_jobs_str = soup.find('span', {'class': 'paginationLabel'})
-        count_jobs_split = re.findall(r'\d+', count_jobs_str.text)
-        for a in soup.findAll('a', {'class': 'jobTitle-link'}):
-            link = a['href']
-            link = 'https://jobs.atos.net' + link
-            if link not in dict_of_key_skills['strUrl']:
-                dict_of_key_skills['strUrl'].append(link)
-                link_text = requests.get(link).text
-                soup_l = BeautifulSoup(link_text, 'html.parser')
-                title = soup_l.find(attrs={
-                    'itemprop': 'title'})
-                if title:
-                    dict_of_key_skills['strJobTitle'].append(title.text)
-                span = soup_l.find('span', attrs={
-                    'class': 'jobdescription'})
-                d = html2text.HTML2Text()
-                d.ignore_links = True
-                skills = d.handle(span.text)
-                array = re.split(r'/|,| |\n|;|(?!.* ).', skills, flags=re.DOTALL)
-                list = array
-                for skill in list:
-                    for s in sk:
-                        if skill.upper() == s.upper():
-                            if s.upper() not in dict_of_key_skills['strArrKeySkills']:
-                                dict_of_key_skills['strArrKeySkills'].append(s)
-        repeat = count_jobs_split[1] < count_jobs_split[2]
-        if repeat:
-           next_page = count_jobs_split[1]
+        try:
+            count_jobs_str = soup.find('span', {'class': 'paginationLabel'})
+            count_jobs_split = re.findall(r'\d+', count_jobs_str.text)
+            for a in soup.findAll('a', {'class': 'jobTitle-link'}):
+                link = a['href']
+                link = 'https://jobs.atos.net' + link
+                if link not in dict_of_key_skills['strUrl']:
+                    dict_of_key_skills['strUrl'].append(link)
+                    link_text = requests.get(link).text
+                    soup_l = BeautifulSoup(link_text, 'html.parser')
+                    title = soup_l.find(attrs={
+                        'itemprop': 'title'})
+                    if title:
+                        dict_of_key_skills['strJobTitle'].append(title.text)
+                    span = soup_l.find('span', attrs={
+                        'class': 'jobdescription'})
+                    d = html2text.HTML2Text()
+                    d.ignore_links = True
+                    skills = d.handle(span.text)
+                    array = re.split(r'/|,| |\n|;|(?!.* ).', skills, flags=re.DOTALL)
+                    list = array
+                    for skill in list:
+                        for s in sk:
+                            if skill.upper() == s.upper():
+                                if s.upper() not in dict_of_key_skills['strArrKeySkills']:
+                                    dict_of_key_skills['strArrKeySkills'].append(s)
+            repeat = count_jobs_split[1] < count_jobs_split[2]
+            dict_of_key_skills['amountvac'] = count_jobs_split[2]
+            if repeat:
+                next_page = count_jobs_split[1]
+        except:
+            repeat = False
     driver.quit()
-    dict_of_key_skills['amountvac'] = count_jobs_split[2]
     return dict_of_key_skills
 
 def analisys(dict,dict_of_key_skills):
