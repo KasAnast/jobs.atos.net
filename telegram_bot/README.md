@@ -1,2 +1,2 @@
 # Telegram bot Scraper
-Work on updater.start_polling()
+Work on start_polling()
