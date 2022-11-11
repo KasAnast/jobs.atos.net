@@ -83,7 +83,24 @@ def analisys(dict, dict_of_key_skills):
             dict[key_skill] = 1
         else:
             dict[key_skill] += 1
-
+def json_create(dict_json):
+    with open("skills.json", "w") as outfile:
+        json.dump(dict_json, outfile)
+def prepare_data(text, region):
+    dict_of_key_skills = call(text, region)
+    dict_json = {}
+    dict_json['strSearch'] = dict_of_key_skills['strSearch']
+    dict_json['strArea'] = dict_of_key_skills['strArea']
+    dict_json['strUrl'] = dict_of_key_skills['strUrl']
+    dict_json['strJobTitle'] = dict_of_key_skills['strJobTitle']
+    dict_json['amountvac'] = dict_of_key_skills['amountvac']
+    dicti = {}
+    analisys(dicti, dict_of_key_skills)
+    sorted_d = dict(sorted(dicti.items(), key=operator.itemgetter(1), reverse=True))
+    dict_json['skills'] = sorted_d
+    json_create(dict_json)
+    dict_json['amountvacstr'] = f"{(len(sorted_d))} skills are found"
+    return dict_json
 
 app = Flask(__name__)
 port = int(os.environ.get('PORT', 3000))
@@ -93,29 +110,18 @@ port = int(os.environ.get('PORT', 3000))
 def load():
     str_text = ""
     str_area = ""
-    sorted_d = {}
-    items_num = ""
+    dict_json = {}
+    dict_json['skills'] = {}
+    dict_json['amountvacstr'] = ""
     if request.method == 'POST':
         str_text = request.form['strText']
         str_area = request.form['strArea']
 
         text = str_text
         region = str_area
-        dict_of_key_skills = call(text, region)
-        dict_json = {}
-        dict_json['strSearch'] = dict_of_key_skills['strSearch']
-        dict_json['strArea'] = dict_of_key_skills['strArea']
-        dict_json['strUrl'] = dict_of_key_skills['strUrl']
-        dict_json['strJobTitle'] = dict_of_key_skills['strJobTitle']
-        dicti = {}
-        analisys(dicti, dict_of_key_skills)
-        sorted_d = dict(sorted(dicti.items(), key=operator.itemgetter(1), reverse=True))
-        dict_json['skills'] = sorted_d
-        with open("skills.json", "w") as outfile:
-            json.dump(dict_json, outfile)
-        items_num = str(len(sorted_d)) + " skills are found"
-    return render_template('index.html', strText=str_text, strArea=str_area, skill_list=sorted_d,
-                           strItemsNum=items_num)
+        dict_json = prepare_data(text, region)
+    return render_template('index.html', strText=str_text, strArea=str_area, skill_list=dict_json['skills'],
+                           strItemsNum=dict_json['amountvacstr'])
 
 
 if __name__ == '__main__':

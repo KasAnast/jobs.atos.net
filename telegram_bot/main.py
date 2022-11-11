@@ -236,6 +236,24 @@ def analisys(dict,dict_of_key_skills):
             dict[key_skill] = 1
         else:
             dict[key_skill] += 1
+def json_create(dict_json):
+    with open("skills.json", "w") as outfile:
+        json.dump(dict_json, outfile)
+def prepare_data(text, region):
+    dict_of_key_skills = call(text, region)
+    dict_json = {}
+    dict_json['strSearch'] = dict_of_key_skills['strSearch']
+    dict_json['strArea'] = dict_of_key_skills['strArea']
+    dict_json['strUrl'] = dict_of_key_skills['strUrl']
+    dict_json['strJobTitle'] = dict_of_key_skills['strJobTitle']
+    dict_json['amountvac'] = dict_of_key_skills['amountvac']
+    dicti = {}
+    analisys(dicti, dict_of_key_skills)
+    sorted_d = dict(sorted(dicti.items(), key=operator.itemgetter(1), reverse=True))
+    dict_json['skills'] = sorted_d
+    json_create(dict_json)
+    dict_json['amountvacstr'] = f"{(len(dict_json['skills']))} skills are found"
+    return dict_json
 
 def get_chat_id(update, context):
     chat_id = -1
@@ -250,23 +268,11 @@ def get_chat_id(update, context):
     return chat_id
 
 def search(update, context):
-    dict_of_key_skills = call(text, region)
-    dict_json = {}
-    dict_json['strSearch'] = dict_of_key_skills['strSearch']
-    dict_json['strArea'] = dict_of_key_skills['strArea']
-    dict_json['strUrl'] = dict_of_key_skills['strUrl']
-    dict_json['strJobTitle'] = dict_of_key_skills['strJobTitle']
-    dicti = {}
-    analisys(dicti, dict_of_key_skills)
-    sorted_d = dict(sorted(dicti.items(), key=operator.itemgetter(1), reverse=True))
-    dict_json['skills'] = sorted_d
-    with open("skills.json", "w") as outfile:
-        json.dump(dict_json, outfile)
-    items_num = f"{(len(sorted_d))} skills are found"
+    dict_json = prepare_data(text, region)
     str = ''
-    for key, value in sorted_d.items():
+    for key, value in dict_json['skills'].items():
         str = f"{str}\n{key} - {value}"
-    update.message.reply_text(f"{items_num}\n"
+    update.message.reply_text(f"{dict_json['amountvacstr']}\n"
                               f"{str}")
     with open("skills.json", "rb") as outfile:
         context.bot.send_document( chat_id=get_chat_id(update, context),

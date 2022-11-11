@@ -81,3 +81,23 @@ def analisys(dict, dict_of_key_skills):
             dict[key_skill] = 1
         else:
             dict[key_skill] += 1
+
+def json_create(dict_json):
+    with open("skills.json", "w") as outfile:
+        json.dump(dict_json, outfile)
+
+def prepare_data(text, region):
+    dict_of_key_skills = call(text, region)
+    dict_json = {}
+    dict_json['strSearch'] = dict_of_key_skills['strSearch']
+    dict_json['strArea'] = dict_of_key_skills['strArea']
+    dict_json['strUrl'] = dict_of_key_skills['strUrl']
+    dict_json['strJobTitle'] = dict_of_key_skills['strJobTitle']
+    dict_json['amountvac'] = dict_of_key_skills['amountvac']
+    dicti = {}
+    analisys(dicti, dict_of_key_skills)
+    sorted_d = dict(sorted(dicti.items(), key=operator.itemgetter(1), reverse=True))
+    dict_json['skills'] = sorted_d
+    json_create(dict_json)
+    dict_json['amountvacstr'] = f"{(len(dict_json['skills']))} skills are found"
+    return dict_json
