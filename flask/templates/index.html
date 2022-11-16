@@ -10,7 +10,7 @@
     <div style="margin-left: 5%;" >
 		<h1 class="text-primary" >Welcome to the skills analyzer</h1>
 
-		<form method="post">
+		<form method="post"  >
 			<dl>
 				<dt> <label for="strText">Text	: </label> </dt>
 				<dd> <input type="text" name="strText" id="strText" value="{{ request.form['strText'] }}"> </dd>
@@ -19,6 +19,18 @@
 				<dt> <input type="submit" value="Submit"> </dt>
 			</dl>
 		</form>
+	</div>
+
+	<div style="margin-left: 5%;" >
+
+		{% if pdf_display %}
+			<form action = 'pdf' target="_blank">
+				<dl>
+					<dt> <input type="submit" value="Pdf" > </dt>
+				</dl>
+			</form>
+		{% endif %}
+
 	</div>
 
 	<div style="margin-left: 5%;" >
