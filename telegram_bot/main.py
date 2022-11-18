@@ -151,6 +151,8 @@
 from telegram import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, \
     CallbackQueryHandler, MessageHandler, Filters
+import time
+from threading import Thread
 # import re
 # import requests
 # from selenium import webdriver
@@ -274,7 +276,14 @@ def get_chat_id(update, context):
 
     return chat_id
 
-def search(update, context):
+
+def send_action(update, context):
+    context.bot.send_chat_action(chat_id=get_chat_id(update, context),
+                                 action='typing')
+
+    time.sleep(5)
+
+def send_searched_info(update, context):
     dict_json = scraper.prepare_data(text, region)
     str = ''
     for key, value in dict_json['skills'].items():
@@ -282,9 +291,18 @@ def search(update, context):
     update.message.reply_text(f"{dict_json['amountvacstr']}\n"
                               f"{str}")
     with open("skills.json", "rb") as outfile:
-        context.bot.send_document( chat_id=get_chat_id(update, context),
-                                   document=outfile,
-                                   filename='skills.json')
+        context.bot.send_document(chat_id=get_chat_id(update, context),
+                                  document=outfile,
+                                  filename='skills.json')
+
+def send_reply_search(update, context):
+    Thread(target=send_action, args=(update, context)).start()
+    Thread(target=send_searched_info, args=(update, context)).start()
+
+def search(update, context):
+    update.message.reply_text('Processing... Please, wait!')
+    send_reply_search(update, context)
+
 
 def set(update, context):
     keyboardInline = [[InlineKeyboardButton("Title", callback_data='title')],
