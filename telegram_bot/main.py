@@ -171,16 +171,16 @@ from threading import Event
 # from selenium.webdriver.chrome.options import Options
 # import json
 # import operator
-
+from fpdf import FPDF
 
 import sys
 
 sys.path.insert(0, r'C:\Users\akasy\python\scraper\jobs.atos.net')
 
-import scraper
+import scraper, pdf_lib
 
-titles = ['python', 'go', 'golang', '1C','java','git','gitlab','linux','windows','sap', 'C#']
-loctab = ['UK','RU','US']
+titles = ['python', 'go', 'golang', '1C','java','git','gitlab','linux','windows','sap', 'C#','*']
+loctab = ['UK','RU','US','*']
 text = ''
 region = ''
 # def call(text, region):
@@ -296,6 +296,11 @@ def send_searched_info(update, context, event):
         context.bot.send_document(chat_id=get_chat_id(update, context),
                                   document=outfile,
                                   filename='skills.json')
+    pdf = pdf_lib.print(dict_json)
+    with open("skills.pdf", "rb") as outfile:
+        context.bot.send_document(chat_id=get_chat_id(update, context),
+                                  document=outfile,
+                                  filename='skills.pdf')
     event.clear()
 def send_reply_search(update, context):
     event = Event()
