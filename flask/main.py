@@ -23,8 +23,7 @@ import sys
 
 sys.path.insert(0, r'C:\Users\akasy\python\scraper\jobs.atos.net')
 
-import scraper
-import pdf
+import scraper, pdf_lib
 
 # def call(text, region):
 #     sk = ['NodeJS', 'Angular', 'TypeScript', 'Robot Framework',
@@ -138,51 +137,8 @@ def load():
 @app.route('/pdf')
 def pdf_gen():
     global djson
-    pdf = FPDF(format='letter', unit='in')
+    pdf = pdf_lib.print(djson)
 
-    # Add new page. Without this you cannot create the document.
-    pdf.add_page()
-
-    # Remember to always put one of these at least once.
-    pdf.set_font('Times', '', 10.0)
-
-    # Effective page width, or just epw
-    epw = pdf.w - 2 * pdf.l_margin
-
-    # Set column width to 1/4 of effective page width to distribute content
-    # evenly across table and page
-    col_width = epw / 2
-
-    # Since we do not need to draw lines anymore, there is no need to separate
-    # headers from data matrix.
-
-    data = [['Skill', 'Rate']
-            ]
-
-    # Document title centered, 'B'old, 14 pt
-    pdf.set_font('Times', 'B', 14.0)
-    pdf.cell(epw, 0.0, djson['strSearch'], align='L')
-    pdf.ln(0.3)
-    pdf.cell(epw, 0.0, djson['amountvacstr'], align='L')
-    pdf.set_font('Times', '', 14.0)
-    pdf.ln(0.3)
-
-    # Text height is the same as current font size
-    th = pdf.font_size
-
-    for row in data:
-        for datum in row:
-            # Enter data in colums
-            # Notice the use of the function str to coerce any input to the
-            # string type. This is needed
-            # since pyFPDF expects a string, not a number.
-            pdf.cell(col_width, th, str(datum), border=1)
-
-        pdf.ln(th)
-
-    # pdf_str = pdf.output('test.pdf','S')
-    # pdf_d = pdf.output('test.pdf','D')
-    pdf.output("skills.pdf")
     response = make_response(pdf.output(dest='S').encode('latin-1'))
     response.headers['Content-Type'] = 'application/pdf;'
     response.headers['Content-Disposition'] = 'inline; filename=test.pdf'
