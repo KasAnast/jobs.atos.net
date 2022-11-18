@@ -153,6 +153,7 @@ from telegram.ext import Updater, CommandHandler, \
     CallbackQueryHandler, MessageHandler, Filters
 import time
 from threading import Thread
+from threading import Event
 # import re
 # import requests
 # from selenium import webdriver
@@ -277,13 +278,14 @@ def get_chat_id(update, context):
     return chat_id
 
 
-def send_action(update, context):
-    context.bot.send_chat_action(chat_id=get_chat_id(update, context),
-                                 action='typing')
-
-    time.sleep(5)
-
-def send_searched_info(update, context):
+def send_action(update, context, event):
+    event.wait()
+    while event.is_set():
+        context.bot.send_chat_action(chat_id=get_chat_id(update, context),
+                                     action='typing')
+        time.sleep(5)
+def send_searched_info(update, context, event):
+    event.set()
     dict_json = scraper.prepare_data(text, region)
     str = ''
     for key, value in dict_json['skills'].items():
@@ -294,10 +296,11 @@ def send_searched_info(update, context):
         context.bot.send_document(chat_id=get_chat_id(update, context),
                                   document=outfile,
                                   filename='skills.json')
-
+    event.clear()
 def send_reply_search(update, context):
-    Thread(target=send_action, args=(update, context)).start()
-    Thread(target=send_searched_info, args=(update, context)).start()
+    event = Event()
+    Thread(target=send_action, args=(update, context, event)).start()
+    Thread(target=send_searched_info, args=(update, context, event)).start()
 
 def search(update, context):
     update.message.reply_text('Processing... Please, wait!')
