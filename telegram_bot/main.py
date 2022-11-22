@@ -156,7 +156,8 @@ from threading import Thread
 from threading import Event
 import subprocess
 import speech_recognition as sr
-# import re
+
+import re
 # import requests
 # from selenium import webdriver
 # from selenium.webdriver.chrome.service import Service
@@ -181,8 +182,8 @@ sys.path.insert(0, r'C:\Users\akasy\python\scraper\jobs.atos.net')
 
 import scraper, pdf_lib
 
-titles = ['python', 'go', 'golang', '1C','java','git','gitlab','linux','windows','sap', 'C#','*']
-loctab = ['UK','RU','US','*']
+titles = ['python', 'go', 'golang', '1C','java','git','gitlab','linux','windows','sap', 'C#','']
+loctab = ['UK','RU','US','']
 text = ''
 region = ''
 # def call(text, region):
@@ -386,6 +387,19 @@ def voice(update, _):
     update.message.reply_text(f'{r.recognize_google(audio)}')
     os.remove(src_filename)
     os.remove(dest_filename)
+
+def text_rec(update, _):
+    global text, region, titles, loctab
+    array = re.split(' ', update.message.text, flags=re.DOTALL)
+    list = frozenset(array)
+    for word in list:
+        for t in titles:
+            if t.upper() == word.upper():
+                text = t
+        for l in loctab:
+            if l.upper() == word.upper():
+                region = l
+    show(update, _)
 def main():
     # Create the Updater and past it your bot's token.
     updater = Updater("5473579136:AAGa7eshR8bvApduIDgT8mcFL6w5M3HNbOE", use_context=True)
@@ -397,7 +411,7 @@ def main():
     updater.dispatcher.add_handler(CommandHandler('cancel', cancel))
     updater.dispatcher.add_handler(CommandHandler('show', show))
 
-    updater.dispatcher.add_handler(MessageHandler(Filters.text, help))
+    updater.dispatcher.add_handler(MessageHandler(Filters.text, text_rec))
     updater.dispatcher.add_handler(MessageHandler(Filters.command, unknown))
     updater.dispatcher.add_handler(MessageHandler(Filters.voice, voice))
     # Start the Bot
