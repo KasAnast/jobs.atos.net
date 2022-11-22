@@ -174,7 +174,7 @@ import speech_recognition as sr
 # import json
 # import operator
 from fpdf import FPDF
-
+import os
 import sys
 
 sys.path.insert(0, r'C:\Users\akasy\python\scraper\jobs.atos.net')
@@ -384,7 +384,8 @@ def voice(update, _):
     with voice as source:
         audio = r.record(source)
     update.message.reply_text(f'{r.recognize_google(audio)}')
-
+    os.remove(src_filename)
+    os.remove(dest_filename)
 def main():
     # Create the Updater and past it your bot's token.
     updater = Updater("5473579136:AAGa7eshR8bvApduIDgT8mcFL6w5M3HNbOE", use_context=True)
