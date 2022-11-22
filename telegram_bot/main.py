@@ -154,6 +154,8 @@ from telegram.ext import Updater, CommandHandler, \
 import time
 from threading import Thread
 from threading import Event
+import subprocess
+import speech_recognition as sr
 # import re
 # import requests
 # from selenium import webdriver
@@ -371,6 +373,18 @@ def cancel(update, _):
 def unknown(update, _):
     update.message.reply_text('Unrecognized command. /help')
 
+def voice(update, _):
+    src_filename = update.message.voice.get_file().download()
+    dest_filename = 'voice.wav'
+    process = subprocess.run(['ffmpeg', '-i', src_filename, dest_filename])
+    if process.returncode != 0:
+        raise Exception("Something went wrong")
+    voice = sr.AudioFile('voice.wav')
+    r = sr.Recognizer()
+    with voice as source:
+        audio = r.record(source)
+    update.message.reply_text(f'{r.recognize_google(audio)}')
+
 def main():
     # Create the Updater and past it your bot's token.
     updater = Updater("5473579136:AAGa7eshR8bvApduIDgT8mcFL6w5M3HNbOE", use_context=True)
@@ -384,6 +398,7 @@ def main():
 
     updater.dispatcher.add_handler(MessageHandler(Filters.text, help))
     updater.dispatcher.add_handler(MessageHandler(Filters.command, unknown))
+    updater.dispatcher.add_handler(MessageHandler(Filters.voice, voice))
     # Start the Bot
     updater.start_polling()
 
