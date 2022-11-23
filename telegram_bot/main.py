@@ -286,9 +286,9 @@ def typing(update, context, event):
     while event.is_set():
         context.bot.send_chat_action(chat_id=get_chat_id(update, context),
                                      action='typing')
-        time.sleep(5)
-def process(update, context, event):
-    event.set()
+        time.sleep(1)
+
+def search_info(update, context):
     dict_json = scraper.prepare_data(text, region)
     str = ''
     for key, value in dict_json['skills'].items():
@@ -304,16 +304,20 @@ def process(update, context, event):
         context.bot.send_document(chat_id=get_chat_id(update, context),
                                   document=outfile,
                                   filename='skills.pdf')
+def process(update, context, event, func):
+    event.set()
+    func(update, context)
     event.clear()
-def send_reply_search(update, context):
+def send_reply(update, context, func):
     event = Event()
     Thread(target=typing, args=(update, context, event)).start()
-    Thread(target=process, args=(update, context, event)).start()
+    Thread(target=process, args=(update, context, event, func)).start()
 
 def search(update, context):
-    update.message.reply_text('Processing... Please, wait!')
-    update.callback_query.delete_message
-    send_reply_search(update, context)
+    md = update.message.reply_text('Processing... Please, wait!')
+    context.bot.deleteMessage(message_id=md.message_id,
+                              chat_id=update.message.chat_id)
+    send_reply(update, context, search_info)
 
 
 def set(update, context):
@@ -331,7 +335,7 @@ def set(update, context):
     # reply_markup.selective = True
     update.message.reply_text('Please choose:', reply_markup=reply_markupInline)
 
-def button(update, _):
+def button(update, context):
     global text, region, titles, loctab
     query = update.callback_query
     update.callback_query.delete_message
@@ -357,7 +361,7 @@ def button(update, _):
                     region = query.data[1:]
                     update.callback_query.edit_message_text("Location: %s" % query.data[1:])
 
-def show(update, _):
+def show(update, context):
     update.message.reply_text(f"Title: {text}\nLocation: {region}")
 def help(update, _):
     update.message.reply_text(
@@ -375,7 +379,34 @@ def cancel(update, _):
 def unknown(update, _):
     update.message.reply_text('Unrecognized command. /help')
 
-def voice(update, _):
+def voice(update, context):
+    update.message.reply_text('Processing... Please, wait!')
+    update.callback_query.delete_message
+    send_reply(update, context, voice_rec)
+def recognize(text_sourse):
+    global text, region, titles, loctab
+    array = re.split(r'/|,| |\n|;', text_sourse, flags=re.DOTALL)
+    list = frozenset(array)
+    for word in list:
+        if word == "c-sharp":
+            word = "C#"
+        for t in titles:
+            if t.upper() == word.upper():
+                text = t
+        for l in loctab:
+            if l.upper() == word.upper():
+                region = l
+def text_rec(update, context):
+    md = update.message.reply_text('Processing... Please, wait!')
+    context.bot.deleteMessage(message_id=md.message_id,
+                              chat_id=update.message.chat_id)
+    send_reply(update, context, text_def)
+
+def text_def(update, context):
+    recognize(update.message.text)
+    show(update, context)
+
+def voice_rec(update, context):
     src_filename = update.message.voice.get_file().download()
     dest_filename = 'voice.wav'
     if os.path.exists(dest_filename):
@@ -403,23 +434,8 @@ def voice(update, _):
     os.remove(src_filename)
     os.remove(dest_filename)
     recognize(response_voice)
-    show(update, _)
-def recognize(text_sourse):
-    global text, region, titles, loctab
-    array = re.split(' ', text_sourse, flags=re.DOTALL)
-    list = frozenset(array)
-    for word in list:
-        if word == "c-sharp":
-            word = "C#"
-        for t in titles:
-            if t.upper() == word.upper():
-                text = t
-        for l in loctab:
-            if l.upper() == word.upper():
-                region = l
-def text_rec(update, _):
-    recognize(update.message.text)
-    show(update, _)
+    show(update, context)
+
 def main():
     # Create the Updater and past it your bot's token.
     updater = Updater("5473579136:AAGa7eshR8bvApduIDgT8mcFL6w5M3HNbOE", use_context=True)
