@@ -385,7 +385,7 @@ def voice(update, context):
     send_reply(update, context, voice_rec)
 def recognize(text_sourse):
     global text, region, titles, loctab
-    array = re.split(r'/|,| |\n|;|.', text_sourse, flags=re.DOTALL)
+    array = re.split(r'/|,| |\n|;|.\n|. ', text_sourse, flags=re.DOTALL)
     list = frozenset(array)
     for word in list:
         if word == "c-sharp":
