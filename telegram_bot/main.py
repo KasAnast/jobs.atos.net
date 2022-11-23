@@ -281,13 +281,13 @@ def get_chat_id(update, context):
     return chat_id
 
 
-def send_action(update, context, event):
+def typing(update, context, event):
     event.wait()
     while event.is_set():
         context.bot.send_chat_action(chat_id=get_chat_id(update, context),
                                      action='typing')
         time.sleep(5)
-def send_searched_info(update, context, event):
+def process(update, context, event):
     event.set()
     dict_json = scraper.prepare_data(text, region)
     str = ''
@@ -307,11 +307,12 @@ def send_searched_info(update, context, event):
     event.clear()
 def send_reply_search(update, context):
     event = Event()
-    Thread(target=send_action, args=(update, context, event)).start()
-    Thread(target=send_searched_info, args=(update, context, event)).start()
+    Thread(target=typing, args=(update, context, event)).start()
+    Thread(target=process, args=(update, context, event)).start()
 
 def search(update, context):
     update.message.reply_text('Processing... Please, wait!')
+    update.callback_query.delete_message
     send_reply_search(update, context)
 
 
@@ -377,28 +378,47 @@ def unknown(update, _):
 def voice(update, _):
     src_filename = update.message.voice.get_file().download()
     dest_filename = 'voice.wav'
+    if os.path.exists(dest_filename):
+        os.remove(dest_filename)
     process = subprocess.run(['ffmpeg', '-i', src_filename, dest_filename])
     if process.returncode != 0:
+        if os.path.exists(src_filename):
+            os.remove(src_filename)
+        if os.path.exists(dest_filename):
+            os.remove(dest_filename)
+        response_voice = "Unable to recognize speech"
+        update.message.reply_text(f'{response_voice}')
         raise Exception("Something went wrong")
     voice = sr.AudioFile('voice.wav')
     r = sr.Recognizer()
     with voice as source:
         audio = r.record(source)
-    update.message.reply_text(f'{r.recognize_google(audio)}')
+    try:
+        response_voice = r.recognize_google(audio)
+    except sr.RequestError:
+        response_voice = "API unavailable"
+    except sr.UnknownValueError:
+        response_voice = "Unable to recognize speech"
+    update.message.reply_text(f'{response_voice}')
     os.remove(src_filename)
     os.remove(dest_filename)
-
-def text_rec(update, _):
+    recognize(response_voice)
+    show(update, _)
+def recognize(text_sourse):
     global text, region, titles, loctab
-    array = re.split(' ', update.message.text, flags=re.DOTALL)
+    array = re.split(' ', text_sourse, flags=re.DOTALL)
     list = frozenset(array)
     for word in list:
+        if word == "c-sharp":
+            word = "C#"
         for t in titles:
             if t.upper() == word.upper():
                 text = t
         for l in loctab:
             if l.upper() == word.upper():
                 region = l
+def text_rec(update, _):
+    recognize(update.message.text)
     show(update, _)
 def main():
     # Create the Updater and past it your bot's token.
