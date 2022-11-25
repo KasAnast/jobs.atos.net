@@ -304,18 +304,20 @@ def search_info(update, context):
         context.bot.send_document(chat_id=get_chat_id(update, context),
                                   document=outfile,
                                   filename='skills.pdf')
-def process(update, context, event, func):
+def process(update, context, event, func, processing_msg):
     event.set()
     func(update, context)
     event.clear()
-def send_reply(update, context, func):
+    context.bot.deleteMessage(message_id=processing_msg.message_id,
+                              chat_id=update.message.chat_id)
+def send_reply(update, context, func, processing_msg):
     event = Event()
     Thread(target=typing, args=(update, context, event)).start()
-    Thread(target=process, args=(update, context, event, func)).start()
+    Thread(target=process, args=(update, context, event, func,processing_msg)).start()
 
 def search(update, context):
     md = update.message.reply_text('Processing... Please, wait!')
-    send_reply(update, context, search_info)
+    send_reply(update, context, search_info, md)
     context.bot.deleteMessage(message_id=md.message_id,
                               chat_id=update.message.chat_id)
 
@@ -380,9 +382,8 @@ def unknown(update, _):
 
 def voice(update, context):
     md = update.message.reply_text('Processing... Please, wait!')
-    send_reply(update, context, voice_rec())
-    context.bot.deleteMessage(message_id=md.message_id,
-                              chat_id=update.message.chat_id)
+    send_reply(update, context, voice_rec, md)
+
 def recognize(text_sourse):
     global text, region, titles, loctab
     rep_text = text_sourse.replace('C#','csharp').replace('C++','cplusplus').replace('c-sharp','csharp').replace('c-plus-plus','cplusplus')
@@ -401,7 +402,7 @@ def recognize(text_sourse):
                 region = l
 def text_rec(update, context):
     md = update.message.reply_text('Processing... Please, wait!')
-    send_reply(update, context, text_def)
+    send_reply(update, context, text_def, md)
     context.bot.deleteMessage(message_id=md.message_id,
                               chat_id=update.message.chat_id)
 def text_def(update, context):
