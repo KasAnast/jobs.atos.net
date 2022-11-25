@@ -315,10 +315,9 @@ def send_reply(update, context, func):
 
 def search(update, context):
     md = update.message.reply_text('Processing... Please, wait!')
+    send_reply(update, context, search_info)
     context.bot.deleteMessage(message_id=md.message_id,
                               chat_id=update.message.chat_id)
-    send_reply(update, context, search_info)
-
 
 def set(update, context):
     keyboardInline = [[InlineKeyboardButton("Title", callback_data='title')],
@@ -380,16 +379,20 @@ def unknown(update, _):
     update.message.reply_text('Unrecognized command. /help')
 
 def voice(update, context):
-    update.message.reply_text('Processing... Please, wait!')
-    update.callback_query.delete_message
-    send_reply(update, context, voice_rec)
+    md = update.message.reply_text('Processing... Please, wait!')
+    send_reply(update, context, voice_rec())
+    context.bot.deleteMessage(message_id=md.message_id,
+                              chat_id=update.message.chat_id)
 def recognize(text_sourse):
     global text, region, titles, loctab
-    array = re.split(r'/|,| |\n|;|.\n|. ', text_sourse, flags=re.DOTALL)
+    rep_text = text_sourse.replace('C#','csharp').replace('C++','cplusplus').replace('c-sharp','csharp').replace('c-plus-plus','cplusplus')
+    array = re.split(r'\W+', rep_text, flags=re.DOTALL)
     list = frozenset(array)
     for word in list:
-        if word == "c-sharp":
+        if word.upper() == "csharp".upper():
             word = "C#"
+        if word.upper() == "cplusplus".upper():
+            word = "C++"
         for t in titles:
             if t.upper() == word.upper():
                 text = t
@@ -398,10 +401,9 @@ def recognize(text_sourse):
                 region = l
 def text_rec(update, context):
     md = update.message.reply_text('Processing... Please, wait!')
+    send_reply(update, context, text_def)
     context.bot.deleteMessage(message_id=md.message_id,
                               chat_id=update.message.chat_id)
-    send_reply(update, context, text_def)
-
 def text_def(update, context):
     recognize(update.message.text)
     show(update, context)

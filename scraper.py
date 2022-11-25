@@ -58,7 +58,12 @@ def call(text, region):
                     d = html2text.HTML2Text()
                     d.ignore_links = True
                     skills = d.handle(span.text)
-                    array = re.split(r'/|,| |\n|;|.\n|. ', skills, flags=re.DOTALL)
+                    rep_skills = skills.replace(
+                        'C#', 'csharp').replace(
+                        'C++', 'cplusplus').replace(
+                        'c-sharp','csharp').replace(
+                        'c-plus-plus', 'cplusplus')
+                    array = re.split(r'\W+', rep_skills, flags=re.DOTALL)
                     list = frozenset(array)
                     for skill in list:
                         for s in sk:
